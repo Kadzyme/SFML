@@ -33,6 +33,7 @@ namespace Game
     {
         public CircleShape ballShape;
         public Vector2f startBallPosition;
+        public Player owner;
 
         public float startBallSpeed;
         public float ballSpeedX;
@@ -64,7 +65,9 @@ namespace Game
         public Player rightPlayer;
         public Player leftPlayer;
 
-        private Text scoreText = new Text();
+        private CircleShape coin = new CircleShape(30);
+
+        private Text scoreText = new();
 
         private Ball ball = new();
 
@@ -73,12 +76,10 @@ namespace Game
             window.SetFramerateLimit(60);
             window.Closed += WindowClosed;
 
-            scoreText.CharacterSize = 180;
-            scoreText.FillColor = Color.Cyan;
-            scoreText.OutlineColor = Color.Red;
-            scoreText.DisplayedString = $"{leftPlayer.score} {rightPlayer.score}";
-            scoreText.Origin = scoreText.Scale / 2;
-            scoreText.Position = new Vector2f(window.Size.X / 2, window.Size.Y / 2);
+            scoreText.Style = Text.Styles.Bold; 
+            scoreText.Font = new Font("C:\\Windows\\Fonts\\Arial.ttf");
+            scoreText.CharacterSize = 120;
+            scoreText.Position = new Vector2f(window.Size.X / 2 - (scoreText.Scale.X * scoreText.CharacterSize), 0);
 
             leftPlayer.playerShape = new RectangleShape(new Vector2f(25, 120));
             leftPlayer = SetPlayerSettings(leftPlayer.playerShape.Size.X / 2, leftPlayer, Keyboard.Key.W, Keyboard.Key.S, Color.Blue);
@@ -86,8 +87,22 @@ namespace Game
             rightPlayer.playerShape = new RectangleShape(new Vector2f(25, 120));
             rightPlayer = SetPlayerSettings(window.Size.X - rightPlayer.playerShape.Size.X / 2, rightPlayer, Keyboard.Key.Up, Keyboard.Key.Down, Color.Red);
 
+            coin.FillColor = Color.Yellow;
+            coin.Origin = new Vector2f(coin.Radius, coin.Radius);
+            CoinMove();
+
+            SetNeutralOwnerForBall();
             ball.SetStartSettings(4f, 25f, Color.Green, new Vector2f(window.Size.X / 2, window.Size.Y / 2));
             ball.SetNormalSpeed();
+        }
+
+        private void SetNeutralOwnerForBall()
+        {
+            Player neutralPlayer = new();
+            neutralPlayer.playerShape = new();
+            neutralPlayer.score = 0;
+            neutralPlayer.playerShape.FillColor = Color.Green;
+            ball.owner = neutralPlayer;
         }
 
         private Player SetPlayerSettings(float playerPosX, Player player, Keyboard.Key UpKey, Keyboard.Key DownKey, Color playerShapeColor)
@@ -97,6 +112,7 @@ namespace Game
             player.playerShape.FillColor = playerShapeColor;
             player.playerShape.Origin = new Vector2f(player.playerShape.Size.X / 2, player.playerShape.Size.Y / 2);
             player.playerShape.Position = new Vector2f(playerPosX, player.playerShape.Size.Y / 2);
+            player.score = 0;
             return player;
         }
 
@@ -108,8 +124,24 @@ namespace Game
                 PlayerMove(leftPlayer.UpKey, leftPlayer.DownKey, leftPlayer);
                 PlayerMove(rightPlayer.UpKey, rightPlayer.DownKey, rightPlayer);
                 BallMove(ball);
+                SetTextForScore();
                 Draw();
             }
+        }
+
+        private void CoinMove()
+        {
+            Random rand = new Random();
+            int radius = Convert.ToInt32(coin.Radius);
+            int windowSizeX = Convert.ToInt32(window.Size.X);
+            int windowSizeY = Convert.ToInt32(window.Size.Y);
+            coin.Position = new Vector2f(rand.Next(radius * 2, windowSizeX - (radius * 2)), rand.Next(radius, windowSizeY - radius));
+        }
+        
+        private void SetTextForScore()
+        {
+            scoreText.FillColor = Color.Green;
+            scoreText.DisplayedString = $"{leftPlayer.score}:{rightPlayer.score}";
         }
 
         private void BallMove(Ball ball)
@@ -125,28 +157,41 @@ namespace Game
                 if (ballSpeedX > 0)
                 {
                     ballSpeedX = normalBallSpeed;
-                    leftPlayer.score++;
                 }
                 else
                 {
                     ballSpeedX = -normalBallSpeed;
-                    rightPlayer.score++;
                 }
-                scoreText.DisplayedString = $"{leftPlayer.score} {rightPlayer.score}";
                 if (ballSpeedY > 0)
                     ballSpeedY = normalBallSpeed;
                 else
                     ballSpeedY = -normalBallSpeed;
+                if (ball.owner.playerShape == leftPlayer.playerShape)
+                    leftPlayer.score++;
+                else if (ball.owner.playerShape == rightPlayer.playerShape)
+                    rightPlayer.score++;
+                SetNeutralOwnerForBall();
                 ballShape.Position = ball.startBallPosition;
             }
             if (BallTouchPlayer(rightPlayer, ball))
             {
                 ballSpeedX = -normalBallSpeed;
+                ball.owner = rightPlayer;
             }
             else if (BallTouchPlayer(leftPlayer, ball))
             {
                 ballSpeedX = normalBallSpeed;
+                ball.owner = leftPlayer;
             }
+            if (BallTouchCoin(coin, ball))
+            {
+                if (ball.owner.playerShape == leftPlayer.playerShape)
+                    leftPlayer.score++;                
+                else if (ball.owner.playerShape == rightPlayer.playerShape)
+                    rightPlayer.score++;
+                CoinMove();
+            }
+            ball.ballShape.FillColor = ball.owner.playerShape.FillColor;
             if (ballShape.Position.Y - ballShape.Radius <= 0)
             {
                 ballSpeedY = normalBallSpeed;
@@ -167,6 +212,12 @@ namespace Game
             && ball.ballShape.Position.X - ball.ballShape.Radius <= player.playerShape.Position.X + player.playerShape.Size.X / 2
             && ball.ballShape.Position.Y - ball.ballShape.Radius <= player.playerShape.Position.Y + player.playerShape.Size.Y / 2
             && ball.ballShape.Position.Y + ball.ballShape.Radius >= player.playerShape.Position.Y - player.playerShape.Size.Y / 2;
+
+        private bool BallTouchCoin(CircleShape coin, Ball ball)
+            => ball.ballShape.Position.X + ball.ballShape.Radius >= coin.Position.X - coin.Radius
+            && ball.ballShape.Position.X - ball.ballShape.Radius <= coin.Position.X + coin.Radius
+            && ball.ballShape.Position.Y - ball.ballShape.Radius <= coin.Position.Y + coin.Radius
+            && ball.ballShape.Position.Y + ball.ballShape.Radius >= coin.Position.Y - coin.Radius;
 
         private float BallSpeedIncrease(float speed)
         {
@@ -201,6 +252,7 @@ namespace Game
             window.DispatchEvents();
             window.Clear();
             window.Draw(scoreText);
+            window.Draw(coin);
             window.Draw(ball.ballShape);
             window.Draw(leftPlayer.playerShape);
             window.Draw(rightPlayer.playerShape);
