@@ -32,6 +32,8 @@ namespace Game
     public class Ball
     {
         public CircleShape ballShape;
+        public Vector2f startBallPosition;
+
         public float startBallSpeed;
         public float ballSpeedX;
         public float ballSpeedY;
@@ -44,7 +46,15 @@ namespace Game
             ballSpeedY = startBallSpeed;
         }
 
-
+        public void SetStartSettings(float startSpeed, float ballRadius, Color ballShapeColor, Vector2f ballPosition)
+        {
+            startBallSpeed = startSpeed;
+            ballShape = new(ballRadius);
+            ballShape.FillColor = ballShapeColor;
+            ballShape.Position = ballPosition;
+            startBallPosition = ballPosition;
+            ballShape.Origin = new Vector2f(ballShape.Radius, ballShape.Radius);
+        }
     }
 
     public class Game
@@ -54,28 +64,40 @@ namespace Game
         public Player rightPlayer;
         public Player leftPlayer;
 
-        private Ball ball;
+        private Text scoreText = new Text();
+
+        private Ball ball = new();
 
         private void Init()
         {
-            //window
             window.SetFramerateLimit(60);
             window.Closed += WindowClosed;
-            //left player
-            leftPlayer.playerShape = new RectangleShape(new Vector2f(120,25));
-            leftPlayer.playerShape.FillColor = Color.Blue;
-            leftPlayer.playerShape.Origin = new Vector2f(leftPlayer.playerShape.Size.X / 2, leftPlayer.playerShape.Size.Y / 2);
-            leftPlayer.playerShape.Position = new Vector2f(leftPlayer.playerShape.Size.X / 2, leftPlayer.playerShape.Size.Y / 2);
-            //right player
-            rightPlayer.playerShape = new RectangleShape(new Vector2f(120, 25));
-            rightPlayer.playerShape.FillColor = Color.Red;
-            rightPlayer.playerShape.Origin = new Vector2f(rightPlayer.playerShape.Size.X / 2, rightPlayer.playerShape.Size.Y / 2);
-            rightPlayer.playerShape.Position = new Vector2f(window.Size.X - rightPlayer.playerShape.Size.X / 2, rightPlayer.playerShape.Size.Y / 2);
-            //ball
-            ball.ballShape = new CircleShape(25);
-            ball.ballShape.FillColor = Color.Green;
-            ball.ballShape.Position = new Vector2f(window.Size.X / 2, window.Size.Y / 2);
-            ball.ballShape.Origin = new Vector2f(ball.ballShape.Radius, ball.ballShape.Radius);
+
+            scoreText.CharacterSize = 180;
+            scoreText.FillColor = Color.Cyan;
+            scoreText.OutlineColor = Color.Red;
+            scoreText.DisplayedString = $"{leftPlayer.score} {rightPlayer.score}";
+            scoreText.Origin = scoreText.Scale / 2;
+            scoreText.Position = new Vector2f(window.Size.X / 2, window.Size.Y / 2);
+
+            leftPlayer.playerShape = new RectangleShape(new Vector2f(25, 120));
+            leftPlayer = SetPlayerSettings(leftPlayer.playerShape.Size.X / 2, leftPlayer, Keyboard.Key.W, Keyboard.Key.S, Color.Blue);
+
+            rightPlayer.playerShape = new RectangleShape(new Vector2f(25, 120));
+            rightPlayer = SetPlayerSettings(window.Size.X - rightPlayer.playerShape.Size.X / 2, rightPlayer, Keyboard.Key.Up, Keyboard.Key.Down, Color.Red);
+
+            ball.SetStartSettings(4f, 25f, Color.Green, new Vector2f(window.Size.X / 2, window.Size.Y / 2));
+            ball.SetNormalSpeed();
+        }
+
+        private Player SetPlayerSettings(float playerPosX, Player player, Keyboard.Key UpKey, Keyboard.Key DownKey, Color playerShapeColor)
+        {
+            player.DownKey = DownKey;
+            player.UpKey = UpKey;
+            player.playerShape.FillColor = playerShapeColor;
+            player.playerShape.Origin = new Vector2f(player.playerShape.Size.X / 2, player.playerShape.Size.Y / 2);
+            player.playerShape.Position = new Vector2f(playerPosX, player.playerShape.Size.Y / 2);
+            return player;
         }
 
         public void GameLoop()
@@ -99,22 +121,29 @@ namespace Game
 
             if (ballShape.Position.X + ballShape.Radius >= window.Size.X || ballShape.Position.X - ballShape.Radius <= 0)
             {
+                normalBallSpeed = ball.startBallSpeed;
                 if (ballSpeedX > 0)
+                {
                     ballSpeedX = normalBallSpeed;
+                    leftPlayer.score++;
+                }
                 else
+                {
                     ballSpeedX = -normalBallSpeed;
+                    rightPlayer.score++;
+                }
+                scoreText.DisplayedString = $"{leftPlayer.score} {rightPlayer.score}";
                 if (ballSpeedY > 0)
                     ballSpeedY = normalBallSpeed;
                 else
                     ballSpeedY = -normalBallSpeed;
-                normalBallSpeed = ball.startBallSpeed;
-                ballShape.Position = new Vector2f(window.Size.X / 2, window.Size.Y / 2);
+                ballShape.Position = ball.startBallPosition;
             }
-            if (ballShape.Position.X + ballShape.Radius >= rightPlayer.playerShape.Position.X - rightPlayer.playerShape.Size.X / 2 && BallTouchPlayer(rightPlayer, ball))
+            if (BallTouchPlayer(rightPlayer, ball))
             {
                 ballSpeedX = -normalBallSpeed;
             }
-            else if (ballShape.Position.X - ballShape.Radius <= leftPlayer.playerShape.Position.X + leftPlayer.playerShape.Size.X / 2 && BallTouchPlayer(leftPlayer, ball))
+            else if (BallTouchPlayer(leftPlayer, ball))
             {
                 ballSpeedX = normalBallSpeed;
             }
@@ -134,12 +163,14 @@ namespace Game
         }
 
         private bool BallTouchPlayer(Player player, Ball ball)
-            => ball.ballShape.Position.Y - ball.ballShape.Radius <= player.playerShape.Position.Y + player.playerShape.Size.Y / 2
+            => ball.ballShape.Position.X + ball.ballShape.Radius >= player.playerShape.Position.X - player.playerShape.Size.X / 2
+            && ball.ballShape.Position.X - ball.ballShape.Radius <= player.playerShape.Position.X + player.playerShape.Size.X / 2
+            && ball.ballShape.Position.Y - ball.ballShape.Radius <= player.playerShape.Position.Y + player.playerShape.Size.Y / 2
             && ball.ballShape.Position.Y + ball.ballShape.Radius >= player.playerShape.Position.Y - player.playerShape.Size.Y / 2;
 
         private float BallSpeedIncrease(float speed)
         {
-            float speedIncrease = 0.005f;
+            float speedIncrease = 0.004f;
             Random rand = new Random();
             if (speed == 0)
                 speed += speedIncrease * rand.Next(-1, 2);
@@ -165,11 +196,11 @@ namespace Game
             player.playerShape.Position += new Vector2f(0, movePlayer);
         }
 
-
         private void Draw()
         {
             window.DispatchEvents();
             window.Clear();
+            window.Draw(scoreText);
             window.Draw(ball.ballShape);
             window.Draw(leftPlayer.playerShape);
             window.Draw(rightPlayer.playerShape);
