@@ -173,17 +173,17 @@ namespace Game
                 SetNeutralOwnerForBall();
                 ballShape.Position = ball.startBallPosition;
             }
-            if (BallTouchPlayer(rightPlayer, ball))
+            if (BallTouchPlayer(rightPlayer.playerShape, ball.ballShape))
             {
                 ballSpeedX = -normalBallSpeed;
                 ball.owner = rightPlayer;
             }
-            else if (BallTouchPlayer(leftPlayer, ball))
+            else if (BallTouchPlayer(leftPlayer.playerShape, ball.ballShape))
             {
                 ballSpeedX = normalBallSpeed;
                 ball.owner = leftPlayer;
             }
-            if (BallTouchCoin(coin, ball))
+            if (BallTouchCoin(coin, ball.ballShape))
             {
                 if (ball.owner.playerShape == leftPlayer.playerShape)
                     leftPlayer.score++;                
@@ -207,17 +207,17 @@ namespace Game
             ball.ballSpeedY = BallSpeedIncrease(ballSpeedY);
         }
 
-        private bool BallTouchPlayer(Player player, Ball ball)
-            => ball.ballShape.Position.X + ball.ballShape.Radius >= player.playerShape.Position.X - player.playerShape.Size.X / 2
-            && ball.ballShape.Position.X - ball.ballShape.Radius <= player.playerShape.Position.X + player.playerShape.Size.X / 2
-            && ball.ballShape.Position.Y - ball.ballShape.Radius <= player.playerShape.Position.Y + player.playerShape.Size.Y / 2
-            && ball.ballShape.Position.Y + ball.ballShape.Radius >= player.playerShape.Position.Y - player.playerShape.Size.Y / 2;
+        private bool BallTouchPlayer (RectangleShape player, CircleShape ball)
+            => ball.Position.X + ball.Radius >= player.Position.X - player.Size.X / 2
+            && ball.Position.X - ball.Radius <= player.Position.X + player.Size.X / 2
+            && ball.Position.Y - ball.Radius <= player.Position.Y + player.Size.Y / 2
+            && ball.Position.Y + ball.Radius >= player.Position.Y - player.Size.Y / 2;
 
-        private bool BallTouchCoin(CircleShape coin, Ball ball)
-            => ball.ballShape.Position.X + ball.ballShape.Radius >= coin.Position.X - coin.Radius
-            && ball.ballShape.Position.X - ball.ballShape.Radius <= coin.Position.X + coin.Radius
-            && ball.ballShape.Position.Y - ball.ballShape.Radius <= coin.Position.Y + coin.Radius
-            && ball.ballShape.Position.Y + ball.ballShape.Radius >= coin.Position.Y - coin.Radius;
+        private bool BallTouchCoin(CircleShape coin, CircleShape ball)
+            => ball.Position.X + ball.Radius >= coin.Position.X - coin.Radius
+            && ball.Position.X - ball.Radius <= coin.Position.X + coin.Radius
+            && ball.Position.Y - ball.Radius <= coin.Position.Y + coin.Radius
+            && ball.Position.Y + ball.Radius >= coin.Position.Y - coin.Radius;
 
         private float BallSpeedIncrease(float speed)
         {
