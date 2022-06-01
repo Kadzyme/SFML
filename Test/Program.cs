@@ -36,8 +36,6 @@ namespace Game
         private List<CircleShape> foodList = new();
         private List<Player> playerList = new();
 
-        private int timeForRevivePlayer = 5;
-
         private void Init()
         {
             window.SetFramerateLimit(60);
@@ -170,6 +168,7 @@ namespace Game
 
         private void EatingPlayer(Player playerForDestroy, Player playerForReward)
         {
+            int timeForRevivePlayer = 5;
             playerForDestroy.isAlive = false;
             playerForDestroy.currentTimeForRevive = timeForRevivePlayer;
             playerForReward.playerShape.Radius += playerForDestroy.playerShape.Radius;
