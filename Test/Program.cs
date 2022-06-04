@@ -31,7 +31,7 @@ namespace Game
 
         public Keys keys;
 
-        public Player pointToGo;
+        public CircleShape pointToGo;
         public bool isBot;
 
         public bool isAlive;
@@ -49,11 +49,11 @@ namespace Game
             return player;
         }
 
-        public void ChangePlayerPos(Player player, RenderWindow window)
+        public void ChangePlayerPos(CircleShape playerShape, RenderWindow window)
         {
-            Vector2f min = new(player.playerShape.Radius, player.playerShape.Radius);
-            Vector2f max = new(window.Size.X - player.playerShape.Radius, window.Size.Y - player.playerShape.Radius);
-            player.playerShape.Position = CustomRandom.Next(min, max);
+            Vector2f min = new(playerShape.Radius, playerShape.Radius);
+            Vector2f max = new(window.Size.X - playerShape.Radius, window.Size.Y - playerShape.Radius);
+            playerShape.Position = CustomRandom.Next(min, max);
         }
     }
 
@@ -85,21 +85,20 @@ namespace Game
             window.SetFramerateLimit(60);
             window.Closed += WindowClosed;
 
-            SetStartPlayerSettings(new Keys(Keyboard.Key.W, Keyboard.Key.S, Keyboard.Key.A, Keyboard.Key.D), Color.Blue, false);
-            SetStartPlayerSettings(new Keys(Keyboard.Key.Up, Keyboard.Key.Down, Keyboard.Key.Left, Keyboard.Key.Right), Color.Red, false);
-            SetStartPlayerSettings(new Keys(Keyboard.Key.I, Keyboard.Key.K, Keyboard.Key.J, Keyboard.Key.L), Color.Green, false);
+            SetStartPlayerSettings(new Keys(Keyboard.Key.W, Keyboard.Key.S, Keyboard.Key.A, Keyboard.Key.D), Color.Blue, true);
+            SetStartPlayerSettings(new Keys(Keyboard.Key.Up, Keyboard.Key.Down, Keyboard.Key.Left, Keyboard.Key.Right), Color.Red, true);
+            SetStartPlayerSettings(new Keys(Keyboard.Key.I, Keyboard.Key.K, Keyboard.Key.J, Keyboard.Key.L), Color.Green, true);
         }
 
         private Player SetStartPlayerSettings(Keys keys, Color playerShapeColor, bool isBot)
         {
             Player player = new();
             player = player.SetStartPlayerSettings(keys, playerShapeColor, isBot);
-            player.ChangePlayerPos(player, window);
+            player.ChangePlayerPos(player.playerShape, window);
             if (player.isBot)
             {
-                player.pointToGo = new();
-                player.pointToGo.playerShape = new(1);
-                player.pointToGo.ChangePlayerPos(player.pointToGo, window);
+                player.pointToGo = new(5);
+                player.ChangePlayerPos(player.pointToGo, window);
             }
             playerList.Add(player);
             return player;
@@ -143,7 +142,7 @@ namespace Game
                 player.currentTimeForRevive -= time;
                 if (player.currentTimeForRevive <= 0 && !player.isAlive)
                 {
-                    player.ChangePlayerPos(player, window);
+                    player.ChangePlayerPos(player.playerShape, window);
                     player.isAlive = true;
                 }
             }
@@ -163,39 +162,51 @@ namespace Game
             => Math.Abs(secondCircle.Position.X - firstCircle.Position.X) <= secondCircle.Radius + firstCircle.Radius 
             && Math.Abs(secondCircle.Position.Y - firstCircle.Position.Y) <= secondCircle.Radius + firstCircle.Radius;
 
+        private bool CollideX(CircleShape firstCircle, CircleShape secondCircle)
+            => Math.Abs(secondCircle.Position.X - firstCircle.Position.X) <= secondCircle.Radius + firstCircle.Radius;
+
+        private bool CollideY(CircleShape firstCircle, CircleShape secondCircle)
+            => Math.Abs(secondCircle.Position.Y - firstCircle.Position.Y) <= secondCircle.Radius + firstCircle.Radius;
+
         private void BotMove(Player player, float playerSpeed)
         {
             Vector2f playerPos = player.playerShape.Position;
-            Vector2f pointToGoPos = player.pointToGo.playerShape.Position;
+            Vector2f pointToGoPos = player.pointToGo.Position;
             Vector2f movePlayer = new(0, 0);
-            if (playerPos.Y < pointToGoPos.Y)
+            if (!CollideY(player.playerShape, player.pointToGo))
             {
-                movePlayer.Y += playerSpeed;
-            }
-            else
-            {
-                movePlayer.Y -= playerSpeed;
+                if (playerPos.Y < pointToGoPos.Y)
+                {
+                    movePlayer.Y += playerSpeed;
+                }
+                else
+                {
+                    movePlayer.Y -= playerSpeed;
+                }
             }
             if (playerOnBounds(player.playerShape.Position + movePlayer, player.playerShape.Radius))
             {
                 player.playerShape.Position += movePlayer;
             }
             movePlayer = new(0, 0);
-            if (playerPos.X < pointToGoPos.X)
+            if (!CollideX(player.playerShape, player.pointToGo))
             {
-                movePlayer.X += playerSpeed;
-            }
-            else
-            {
-                movePlayer.X -= playerSpeed;
+                if (playerPos.X < pointToGoPos.X)
+                {
+                    movePlayer.X += playerSpeed;
+                }
+                else
+                {
+                    movePlayer.X -= playerSpeed;
+                }
             }
             if (playerOnBounds(player.playerShape.Position + movePlayer, player.playerShape.Radius))
             {
                 player.playerShape.Position += movePlayer;
             }
-            if (Collide(player.playerShape, player.pointToGo.playerShape))
+            if (Collide(player.playerShape, player.pointToGo))
             {
-                player.pointToGo.ChangePlayerPos(player.pointToGo, window);
+                player.ChangePlayerPos(player.pointToGo, window);
             }
             CheckCollisions(player);
         }
