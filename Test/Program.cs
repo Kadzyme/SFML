@@ -13,25 +13,69 @@ namespace Game
         }
     }
 
+    public class CustomRandom
+    {
+        public static Vector2f Next(Vector2f min, Vector2f max)
+        {
+            Random rand = new();
+            float x = rand.Next((int)min.X, (int)max.X);
+            float y = rand.Next((int)min.Y, (int)max.Y);
+            Vector2f result = new(x, y);
+            return result;
+        }
+    }
+
     public class Player
     {
         public CircleShape playerShape;
 
-        public Keyboard.Key DownKey;
-        public Keyboard.Key UpKey;
-        public Keyboard.Key LeftKey;
-        public Keyboard.Key RightKey;
+        public Keys keys;
+
+        public Player pointToGo;
+        public bool isBot;
 
         public bool isAlive;
         public float currentTimeForRevive = 0;
+
+        public Player SetStartPlayerSettings(Keys keys, Color playerShapeColor, bool isBot)
+        {
+            Player player = new();
+            player.playerShape = new(25);
+            player.keys = keys;
+            player.playerShape.FillColor = playerShapeColor;
+            player.playerShape.Origin = new Vector2f(player.playerShape.Radius, player.playerShape.Radius);
+            player.isAlive = true;
+            player.isBot = isBot;
+            return player;
+        }
+
+        public void ChangePlayerPos(Player player, RenderWindow window)
+        {
+            Vector2f min = new(player.playerShape.Radius, player.playerShape.Radius);
+            Vector2f max = new(window.Size.X - player.playerShape.Radius, window.Size.Y - player.playerShape.Radius);
+            player.playerShape.Position = CustomRandom.Next(min, max);
+        }
+    }
+
+    public struct Keys
+    {
+        public Keyboard.Key UpKey;
+        public Keyboard.Key DownKey;
+        public Keyboard.Key LeftKey;
+        public Keyboard.Key RightKey;
+
+        public Keys(Keyboard.Key UpKey, Keyboard.Key DownKey, Keyboard.Key LeftKey, Keyboard.Key RightKey)
+        {
+            this.UpKey = UpKey;
+            this.DownKey = DownKey;
+            this.LeftKey = LeftKey;
+            this.RightKey = RightKey;
+        }
     }
 
     public class Game
     {
-        private RenderWindow window = new RenderWindow(new VideoMode(1600, 900), "Game");
-
-        private Player rightPlayer = new();
-        private Player leftPlayer = new();
+        private RenderWindow window = new(new VideoMode(1600, 900), "Game");
 
         private List<CircleShape> foodList = new();
         private List<Player> playerList = new();
@@ -41,24 +85,23 @@ namespace Game
             window.SetFramerateLimit(60);
             window.Closed += WindowClosed;
 
-            leftPlayer = SetStartPlayerSettings(leftPlayer, Keyboard.Key.W, Keyboard.Key.S, Keyboard.Key.A, Keyboard.Key.D, Color.Blue);
-
-            rightPlayer = SetStartPlayerSettings(rightPlayer, Keyboard.Key.Up, Keyboard.Key.Down, Keyboard.Key.Left, Keyboard.Key.Right, Color.Red);
+            SetStartPlayerSettings(new Keys(Keyboard.Key.W, Keyboard.Key.S, Keyboard.Key.A, Keyboard.Key.D), Color.Blue, true);
+            SetStartPlayerSettings(new Keys(Keyboard.Key.Up, Keyboard.Key.Down, Keyboard.Key.Left, Keyboard.Key.Right), Color.Red, false);
+            SetStartPlayerSettings(new Keys(Keyboard.Key.I, Keyboard.Key.K, Keyboard.Key.J, Keyboard.Key.L), Color.Green, true);
         }
 
-        private Player SetStartPlayerSettings(Player player, Keyboard.Key UpKey, Keyboard.Key DownKey, Keyboard.Key LeftKey, Keyboard.Key RightKey, Color playerShapeColor)
+        private Player SetStartPlayerSettings(Keys keys, Color playerShapeColor, bool isBot)
         {
-            player.playerShape = new(25);
-            player.DownKey = DownKey;
-            player.UpKey = UpKey;
-            player.LeftKey = LeftKey;
-            player.RightKey = RightKey;
-            player.playerShape.FillColor = playerShapeColor;
-            Random rand = new Random();
-            player.playerShape.Origin = new Vector2f(player.playerShape.Radius, player.playerShape.Radius);
-            player.playerShape.Position = new Vector2f(rand.Next((int)player.playerShape.Radius, (int)window.Size.X - (int)player.playerShape.Radius), rand.Next((int)player.playerShape.Radius, (int)window.Size.Y - (int)player.playerShape.Radius));
+            Player player = new();
+            player = player.SetStartPlayerSettings(keys, playerShapeColor, isBot);
+            player.ChangePlayerPos(player, window);
+            if (player.isBot)
+            {
+                player.pointToGo = new();
+                player.pointToGo.playerShape = new(1);
+                player.pointToGo.ChangePlayerPos(player.pointToGo, window);
+            }
             playerList.Add(player);
-            player.isAlive = true;
             return player;
         }
 
@@ -66,12 +109,21 @@ namespace Game
         {
             float foodSpawnRate = 1f;
             float currentTimeToSpawnFood = foodSpawnRate;
+            float playerSpeed = 7;
             Clock time = new();
             Init();
             while (window.IsOpen)
             {
-                PlayerMove(leftPlayer);
-                PlayerMove(rightPlayer);
+                foreach (Player player in playerList)
+                {
+                    if (player.isAlive)
+                    {
+                        if (!player.isBot)
+                            PlayerMove(player, playerSpeed);
+                        else
+                            BotMove(player, playerSpeed);
+                    }
+                }
                 CheckTimeForPlayerRespawn(time.ElapsedTime.AsSeconds());
                 if (currentTimeToSpawnFood <= 0)
                 {
@@ -91,8 +143,7 @@ namespace Game
                 player.currentTimeForRevive -= time;
                 if (player.currentTimeForRevive <= 0 && !player.isAlive)
                 {
-                    Random rand = new();
-                    player.playerShape.Position = new Vector2f(rand.Next((int)player.playerShape.Radius, (int)window.Size.X - (int)player.playerShape.Radius), rand.Next((int)player.playerShape.Radius, (int)window.Size.Y - (int)player.playerShape.Radius));
+                    player.ChangePlayerPos(player, window);
                     player.isAlive = true;
                 }
             }
@@ -112,32 +163,77 @@ namespace Game
             => Math.Abs(secondCircle.Position.X - firstCircle.Position.X) <= secondCircle.Radius + firstCircle.Radius 
             && Math.Abs(secondCircle.Position.Y - firstCircle.Position.Y) <= secondCircle.Radius + firstCircle.Radius;
 
-        private void PlayerMove(Player player)
+        private void BotMove(Player player, float playerSpeed)
         {
-            if (player.isAlive)
+            Vector2f playerPos = player.playerShape.Position;
+            Vector2f pointToGoPos = player.pointToGo.playerShape.Position;
+            Vector2f movePlayer = new(0, 0);
+            if (playerPos.Y < pointToGoPos.Y)
             {
-                float playerSpeed = 7;
-                Vector2f movePlayer = new(0, 0);
-                if (Keyboard.IsKeyPressed(player.DownKey) && player.playerShape.Position.Y + player.playerShape.Radius < window.Size.Y)
-                {
-                    movePlayer.Y += playerSpeed;
-                }
-                else if (Keyboard.IsKeyPressed(player.UpKey) && player.playerShape.Position.Y - player.playerShape.Radius > 0)
-                {
-                    movePlayer.Y -= playerSpeed;
-                }
-                if (Keyboard.IsKeyPressed(player.RightKey) && player.playerShape.Position.X + player.playerShape.Radius < window.Size.X)
-                {
-                    movePlayer.X += playerSpeed;
-                }
-                else if (Keyboard.IsKeyPressed(player.LeftKey) && player.playerShape.Position.X - player.playerShape.Radius > 0)
-                {
-                    movePlayer.X -= playerSpeed;
-                }
-                player.playerShape.Position += movePlayer;
-                CheckCollisions(player);
+                movePlayer.Y += playerSpeed;
             }
+            else
+            {
+                movePlayer.Y -= playerSpeed;
+            }
+            if (playerOnBounds(player.playerShape.Position + movePlayer, player.playerShape.Radius))
+            {
+                player.playerShape.Position += movePlayer;
+            }
+            movePlayer = new(0, 0);
+            if (playerPos.X < pointToGoPos.X)
+            {
+                movePlayer.X += playerSpeed;
+            }
+            else
+            {
+                movePlayer.X -= playerSpeed;
+            }
+            if (playerOnBounds(player.playerShape.Position + movePlayer, player.playerShape.Radius))
+            {
+                player.playerShape.Position += movePlayer;
+            }
+            if (Collide(player.playerShape, player.pointToGo.playerShape))
+            {
+                player.pointToGo.ChangePlayerPos(player.pointToGo, window);
+            }
+            CheckCollisions(player);
         }
+
+        private void PlayerMove(Player player, float playerSpeed)
+        {            
+            Vector2f movePlayer = new(0, 0);
+            if (Keyboard.IsKeyPressed(player.keys.DownKey))
+            {
+                movePlayer.Y += playerSpeed;
+            }
+            else if (Keyboard.IsKeyPressed(player.keys.UpKey))
+            {
+                movePlayer.Y -= playerSpeed;
+            }
+            if (playerOnBounds(player.playerShape.Position + movePlayer, player.playerShape.Radius))
+            {
+                player.playerShape.Position += movePlayer;
+            }
+            movePlayer = new(0, 0);
+            if (Keyboard.IsKeyPressed(player.keys.RightKey))
+            {
+                movePlayer.X += playerSpeed;
+            }
+            else if (Keyboard.IsKeyPressed(player.keys.LeftKey))
+            {
+                movePlayer.X -= playerSpeed;
+            }
+            if (playerOnBounds(player.playerShape.Position + movePlayer, player.playerShape.Radius))
+            {
+                player.playerShape.Position += movePlayer;
+            }
+            CheckCollisions(player);
+        }
+
+        private bool playerOnBounds(Vector2f PlayerPos, float radius)
+            => PlayerPos.Y + radius < window.Size.Y && PlayerPos.Y - radius > 0
+            && PlayerPos.X + radius < window.Size.X && PlayerPos.X - radius > 0;
 
         private void CheckCollisions(Player player)
         {
@@ -171,8 +267,15 @@ namespace Game
             int timeForRevivePlayer = 5;
             playerForDestroy.isAlive = false;
             playerForDestroy.currentTimeForRevive = timeForRevivePlayer;
-            playerForReward.playerShape.Radius += playerForDestroy.playerShape.Radius;
+            playerForReward.playerShape.Radius += playerForDestroy.playerShape.Radius / 2;
             playerForReward.playerShape.Origin = new Vector2f(playerForReward.playerShape.Radius, playerForReward.playerShape.Radius);
+            BugFix(playerForReward);
+        }
+
+        private void BugFix(Player player)
+        {
+            if (!playerOnBounds(player.playerShape.Position, player.playerShape.Radius))
+                player.ChangePlayerPos(player, window);
         }
 
         private void Draw()
