@@ -85,9 +85,9 @@ namespace Game
             window.SetFramerateLimit(60);
             window.Closed += WindowClosed;
 
-            SetStartPlayerSettings(new Keys(Keyboard.Key.W, Keyboard.Key.S, Keyboard.Key.A, Keyboard.Key.D), Color.Blue, true);
+            SetStartPlayerSettings(new Keys(Keyboard.Key.W, Keyboard.Key.S, Keyboard.Key.A, Keyboard.Key.D), Color.Blue, false);
             SetStartPlayerSettings(new Keys(Keyboard.Key.Up, Keyboard.Key.Down, Keyboard.Key.Left, Keyboard.Key.Right), Color.Red, false);
-            SetStartPlayerSettings(new Keys(Keyboard.Key.I, Keyboard.Key.K, Keyboard.Key.J, Keyboard.Key.L), Color.Green, true);
+            SetStartPlayerSettings(new Keys(Keyboard.Key.I, Keyboard.Key.K, Keyboard.Key.J, Keyboard.Key.L), Color.Green, false);
         }
 
         private Player SetStartPlayerSettings(Keys keys, Color playerShapeColor, bool isBot)
@@ -269,13 +269,30 @@ namespace Game
             playerForDestroy.currentTimeForRevive = timeForRevivePlayer;
             playerForReward.playerShape.Radius += playerForDestroy.playerShape.Radius / 2;
             playerForReward.playerShape.Origin = new Vector2f(playerForReward.playerShape.Radius, playerForReward.playerShape.Radius);
-            BugFix(playerForReward);
+            BugFix(playerForReward, playerForDestroy.playerShape.Radius / 2);
         }
 
-        private void BugFix(Player player)
+        private void BugFix(Player player, float addedRadius)
         {
-            if (!playerOnBounds(player.playerShape.Position, player.playerShape.Radius))
-                player.ChangePlayerPos(player, window);
+            Vector2f PlayerPos = player.playerShape.Position;
+            float radius = player.playerShape.Radius;
+            if (PlayerPos.Y + radius > window.Size.Y)
+            {
+                PlayerPos.Y -= addedRadius;
+            }
+            else if (PlayerPos.Y - radius < 0)
+            {
+                PlayerPos.Y += addedRadius;
+            }
+            if (PlayerPos.X + radius > window.Size.X)
+            {
+                PlayerPos.X -= addedRadius;
+            }
+            else if (PlayerPos.X - radius < 0)
+            {
+                PlayerPos.X += addedRadius;
+            }
+            player.playerShape.Position = PlayerPos;
         }
 
         private void Draw()
