@@ -85,9 +85,9 @@ namespace Game
             window.SetFramerateLimit(60);
             window.Closed += WindowClosed;
 
-            SetStartPlayerSettings(new Keys(Keyboard.Key.W, Keyboard.Key.S, Keyboard.Key.A, Keyboard.Key.D), Color.Blue, true);
-            SetStartPlayerSettings(new Keys(Keyboard.Key.Up, Keyboard.Key.Down, Keyboard.Key.Left, Keyboard.Key.Right), Color.Red, true);
-            SetStartPlayerSettings(new Keys(Keyboard.Key.I, Keyboard.Key.K, Keyboard.Key.J, Keyboard.Key.L), Color.Green, true);
+            SetStartPlayerSettings(new Keys(Keyboard.Key.W, Keyboard.Key.S, Keyboard.Key.A, Keyboard.Key.D), Color.Blue, false);
+            SetStartPlayerSettings(new Keys(Keyboard.Key.Up, Keyboard.Key.Down, Keyboard.Key.Left, Keyboard.Key.Right), Color.Red, false);
+            SetStartPlayerSettings(new Keys(Keyboard.Key.I, Keyboard.Key.K, Keyboard.Key.J, Keyboard.Key.L), Color.Green, false);
         }
 
         private Player SetStartPlayerSettings(Keys keys, Color playerShapeColor, bool isBot)
@@ -280,28 +280,28 @@ namespace Game
             playerForDestroy.currentTimeForRevive = timeForRevivePlayer;
             playerForReward.playerShape.Radius += playerForDestroy.playerShape.Radius / 2;
             playerForReward.playerShape.Origin = new Vector2f(playerForReward.playerShape.Radius, playerForReward.playerShape.Radius);
-            BugFix(playerForReward, playerForDestroy.playerShape.Radius / 2);
+            BugFix(playerForReward);
         }
 
-        private void BugFix(Player player, float addedRadius)
+        private void BugFix(Player player)
         {
             Vector2f PlayerPos = player.playerShape.Position;
             float radius = player.playerShape.Radius;
             if (PlayerPos.Y + radius > window.Size.Y)
             {
-                PlayerPos.Y -= addedRadius;
+                PlayerPos.Y = window.Size.Y - radius - 1;
             }
-            else if (PlayerPos.Y - radius < 0)
+            if (PlayerPos.Y - radius < 0)
             {
-                PlayerPos.Y += addedRadius;
+                PlayerPos.Y = radius + 1;
             }
             if (PlayerPos.X + radius > window.Size.X)
             {
-                PlayerPos.X -= addedRadius;
+                PlayerPos.X = window.Size.X - radius - 1;
             }
-            else if (PlayerPos.X - radius < 0)
+            if (PlayerPos.X - radius < 0)
             {
-                PlayerPos.X += addedRadius;
+                PlayerPos.X = radius + 1;
             }
             player.playerShape.Position = PlayerPos;
         }
