@@ -60,8 +60,6 @@ namespace Game
 
         public PlayerSwapAbility swapAbility = new();
 
-        //private List<Drawable> drawableList;
-
         public CircleShape pointToGo;
         public bool isBot;
 
