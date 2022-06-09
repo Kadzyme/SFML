@@ -15,13 +15,40 @@ namespace Game
 
     public class CustomRandom
     {
-        public static Vector2f Next(Vector2f min, Vector2f max)
+        private static Random rand = new();
+
+        public static Vector2f Vector(Vector2f min, Vector2f max)
         {
-            Random rand = new();
             float x = rand.Next((int)min.X, (int)max.X);
             float y = rand.Next((int)min.Y, (int)max.Y);
             Vector2f result = new(x, y);
             return result;
+        }
+
+        public static Vector3f Color()
+            => new Vector3f(rand.Next(0, 256), rand.Next(0, 256), rand.Next(0, 256));
+    }
+
+    public class PlayerSwapAbility
+    {
+        public Keyboard.Key key;
+
+        private float normalCooldown = 2f;
+        public float currentCooldown;
+
+        public float Distance(Vector2f playerPos, Vector2f otherPlayerPos)
+            => Math.Abs((otherPlayerPos.X - playerPos.X) + (otherPlayerPos.Y - playerPos.Y));
+
+        public void SwapPlayers(Player playerToSwap1, Player playerToSwap2)
+        {
+            var playerShape = playerToSwap1.playerShape;
+            playerToSwap1.playerShape = playerToSwap2.playerShape;
+            playerToSwap2.playerShape = playerShape;
+        }
+
+        public void ResetCooldownOfAbility()
+        {
+            currentCooldown = normalCooldown;
         }
     }
 
@@ -29,7 +56,11 @@ namespace Game
     {
         public CircleShape playerShape;
 
-        public Keys keys;
+        public KeysForMoving keys;
+
+        public PlayerSwapAbility swapAbility = new();
+
+        //private List<Drawable> drawableList;
 
         public CircleShape pointToGo;
         public bool isBot;
@@ -37,34 +68,37 @@ namespace Game
         public bool isAlive;
         public float currentTimeForRevive = 0;
 
-        public Player SetStartPlayerSettings(Keys keys, Color playerShapeColor, bool isBot)
+        public Player SetStartPlayerSettings(KeysForMoving keys, Keyboard.Key keyForSwap, Color playerShapeColor, bool isBot)
         {
             Player player = new();
             player.playerShape = new(25);
             player.keys = keys;
+            player.swapAbility.key = keyForSwap;
             player.playerShape.FillColor = playerShapeColor;
             player.playerShape.Origin = new Vector2f(player.playerShape.Radius, player.playerShape.Radius);
             player.isAlive = true;
             player.isBot = isBot;
+            player.pointToGo = new(5);
+            player.swapAbility.ResetCooldownOfAbility();
             return player;
         }
 
-        public void ChangePlayerPos(CircleShape playerShape, RenderWindow window)
+        public void ChangePos(CircleShape playerShape, RenderWindow window)
         {
             Vector2f min = new(playerShape.Radius, playerShape.Radius);
             Vector2f max = new(window.Size.X - playerShape.Radius, window.Size.Y - playerShape.Radius);
-            playerShape.Position = CustomRandom.Next(min, max);
+            playerShape.Position = CustomRandom.Vector(min, max);
         }
     }
 
-    public struct Keys
+    public struct KeysForMoving
     {
         public Keyboard.Key UpKey;
         public Keyboard.Key DownKey;
         public Keyboard.Key LeftKey;
         public Keyboard.Key RightKey;
 
-        public Keys(Keyboard.Key UpKey, Keyboard.Key DownKey, Keyboard.Key LeftKey, Keyboard.Key RightKey)
+        public KeysForMoving(Keyboard.Key UpKey, Keyboard.Key DownKey, Keyboard.Key LeftKey, Keyboard.Key RightKey)
         {
             this.UpKey = UpKey;
             this.DownKey = DownKey;
@@ -85,28 +119,24 @@ namespace Game
             window.SetFramerateLimit(60);
             window.Closed += WindowClosed;
 
-            SetStartPlayerSettings(new Keys(Keyboard.Key.W, Keyboard.Key.S, Keyboard.Key.A, Keyboard.Key.D), Color.Blue, false);
-            SetStartPlayerSettings(new Keys(Keyboard.Key.Up, Keyboard.Key.Down, Keyboard.Key.Left, Keyboard.Key.Right), Color.Red, false);
-            SetStartPlayerSettings(new Keys(Keyboard.Key.I, Keyboard.Key.K, Keyboard.Key.J, Keyboard.Key.L), Color.Green, false);
+            SetStartPlayerSettings(new KeysForMoving(Keyboard.Key.W, Keyboard.Key.S, Keyboard.Key.A, Keyboard.Key.D), Keyboard.Key.C, Color.Blue, true);
+            SetStartPlayerSettings(new KeysForMoving(Keyboard.Key.Up, Keyboard.Key.Down, Keyboard.Key.Left, Keyboard.Key.Right), Keyboard.Key.R, Color.Red, false);
+            SetStartPlayerSettings(new KeysForMoving(Keyboard.Key.I, Keyboard.Key.K, Keyboard.Key.J, Keyboard.Key.L), Keyboard.Key.P, Color.Black, false);
         }
 
-        private Player SetStartPlayerSettings(Keys keys, Color playerShapeColor, bool isBot)
+        private Player SetStartPlayerSettings(KeysForMoving keys, Keyboard.Key keyForSwap, Color playerShapeColor, bool isBot)
         {
             Player player = new();
-            player = player.SetStartPlayerSettings(keys, playerShapeColor, isBot);
-            player.ChangePlayerPos(player.playerShape, window);
-            if (player.isBot)
-            {
-                player.pointToGo = new(5);
-                player.ChangePlayerPos(player.pointToGo, window);
-            }
+            player = player.SetStartPlayerSettings(keys, keyForSwap, playerShapeColor, isBot);
+            player.ChangePos(player.playerShape, window);
+            player.ChangePos(player.pointToGo, window);
             playerList.Add(player);
             return player;
         }
 
         public void GameLoop()
         {
-            float foodSpawnRate = 1f;
+            float foodSpawnRate = 0.5f;
             float currentTimeToSpawnFood = foodSpawnRate;
             float playerSpeed = 7;
             Clock time = new();
@@ -115,12 +145,16 @@ namespace Game
             {
                 foreach (Player player in playerList)
                 {
+                    player.swapAbility.currentCooldown -= time.ElapsedTime.AsSeconds();
                     if (player.isAlive)
                     {
                         if (!player.isBot)
                             PlayerMove(player, playerSpeed);
                         else
                             BotMove(player, playerSpeed);
+                        if (Keyboard.IsKeyPressed(player.swapAbility.key))
+                            SwapAbility(player);
+                        BugFix(player);
                     }
                 }
                 CheckTimeForPlayerRespawn(time.ElapsedTime.AsSeconds());
@@ -135,6 +169,27 @@ namespace Game
             }
         }
 
+        public void SwapAbility(Player player)
+        {
+            float minDistance = window.Size.X + window.Size.Y;
+            Player? p = null;
+            foreach (Player otherPlayer in playerList)
+            {
+                float curDistance = player.swapAbility.Distance(player.playerShape.Position, otherPlayer.playerShape.Position);
+                if (curDistance < minDistance && otherPlayer != player && otherPlayer.isAlive
+                    && player.swapAbility.currentCooldown < 0)
+                {
+                    minDistance = curDistance;
+                    p = otherPlayer;
+                }
+            }
+            if (p != null)
+            {
+                player.swapAbility.SwapPlayers(p, player);
+                player.swapAbility.ResetCooldownOfAbility();
+            }
+        }
+
         private void CheckTimeForPlayerRespawn(float time)
         {
             foreach (Player player in playerList)
@@ -142,7 +197,7 @@ namespace Game
                 player.currentTimeForRevive -= time;
                 if (player.currentTimeForRevive <= 0 && !player.isAlive)
                 {
-                    player.ChangePlayerPos(player.playerShape, window);
+                    player.ChangePos(player.playerShape, window);
                     player.isAlive = true;
                 }
             }
@@ -206,7 +261,7 @@ namespace Game
             }
             if (Collide(player.playerShape, player.pointToGo))
             {
-                player.ChangePlayerPos(player.pointToGo, window);
+                player.ChangePos(player.pointToGo, window);
             }
             CheckCollisions(player);
         }
@@ -278,9 +333,8 @@ namespace Game
             int timeForRevivePlayer = 5;
             playerForDestroy.isAlive = false;
             playerForDestroy.currentTimeForRevive = timeForRevivePlayer;
-            playerForReward.playerShape.Radius += playerForDestroy.playerShape.Radius / 2;
+            playerForReward.playerShape.Radius += playerForDestroy.playerShape.Radius / 4;
             playerForReward.playerShape.Origin = new Vector2f(playerForReward.playerShape.Radius, playerForReward.playerShape.Radius);
-            BugFix(playerForReward);
         }
 
         private void BugFix(Player player)
