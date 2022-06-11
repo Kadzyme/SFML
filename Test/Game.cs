@@ -36,7 +36,6 @@ namespace Game
         {
             float foodSpawnRate = 0.5f;
             float currentTimeToSpawnFood = foodSpawnRate;
-            float playerSpeed = 7;
             Clock time = new();
             Init();
             while (window.IsOpen)
@@ -46,13 +45,10 @@ namespace Game
                     player.swapAbility.currentCooldown -= time.ElapsedTime.AsSeconds();
                     if (player.isAlive)
                     {
-                        if (!player.isBot)
-                            PlayerMove(player, playerSpeed);
-                        else
-                            BotMove(player, playerSpeed);
+                        Moving(player);
                         if (Keyboard.IsKeyPressed(player.swapAbility.key))
                             SwapAbility(player);
-                        AntiStack(player);
+                        AntiStack(player.playerShape);
                     }
                     else
                     {
@@ -120,7 +116,20 @@ namespace Game
         private bool CollideY(CircleShape firstCircle, CircleShape secondCircle)
             => Math.Abs(secondCircle.Position.Y - firstCircle.Position.Y) <= secondCircle.Radius + firstCircle.Radius;
 
-        private void BotMove(Player player, float playerSpeed)
+        private void Moving(Player player)
+        {
+            float playerSpeed = 7f;
+            Vector2f movePlayer;
+            if (!player.isBot)
+                movePlayer = PlayerMove(player, playerSpeed);
+            else
+                movePlayer = BotMove(player, playerSpeed);
+            player.playerShape.Position += movePlayer;
+            CheckEating(player);
+            AntiStack(player.playerShape);
+        }
+
+        private Vector2f BotMove(Player player, float playerSpeed)
         {
             Vector2f playerPos = player.playerShape.Position;
             Vector2f pointToGoPos = player.pointToGo.Position;
@@ -136,11 +145,6 @@ namespace Game
                     movePlayer.Y -= playerSpeed;
                 }
             }
-            if (playerOnBounds(player.playerShape.Position + movePlayer, player.playerShape.Radius))
-            {
-                player.playerShape.Position += movePlayer;
-            }
-            movePlayer = new(0, 0);
             if (!CollideX(player.playerShape, player.pointToGo))
             {
                 if (playerPos.X < pointToGoPos.X)
@@ -152,18 +156,14 @@ namespace Game
                     movePlayer.X -= playerSpeed;
                 }
             }
-            if (playerOnBounds(player.playerShape.Position + movePlayer, player.playerShape.Radius))
-            {
-                player.playerShape.Position += movePlayer;
-            }
             if (Collide(player.playerShape, player.pointToGo))
             {
                 player.ChangePos(player.pointToGo, window);
             }
-            CheckEating(player);
+            return movePlayer;
         }
 
-        private void PlayerMove(Player player, float playerSpeed)
+        private Vector2f PlayerMove(Player player, float playerSpeed)
         {            
             Vector2f movePlayer = new(0, 0);
             if (Keyboard.IsKeyPressed(player.keys.DownKey))
@@ -174,11 +174,6 @@ namespace Game
             {
                 movePlayer.Y -= playerSpeed;
             }
-            if (playerOnBounds(player.playerShape.Position + movePlayer, player.playerShape.Radius))
-            {
-                player.playerShape.Position += movePlayer;
-            }
-            movePlayer = new(0, 0);
             if (Keyboard.IsKeyPressed(player.keys.RightKey))
             {
                 movePlayer.X += playerSpeed;
@@ -187,16 +182,8 @@ namespace Game
             {
                 movePlayer.X -= playerSpeed;
             }
-            if (playerOnBounds(player.playerShape.Position + movePlayer, player.playerShape.Radius))
-            {
-                player.playerShape.Position += movePlayer;
-            }
-            CheckEating(player);
+            return movePlayer;
         }
-
-        private bool playerOnBounds(Vector2f playerPos, float radius)
-            => playerPos.Y + radius < window.Size.Y && playerPos.Y - radius > 0
-            && playerPos.X + radius < window.Size.X && playerPos.X - radius > 0;
 
         private void CheckEating(Player player)
         {
@@ -233,10 +220,10 @@ namespace Game
             SetOrigin(playerForReward.playerShape);
         }
 
-        private void AntiStack(Player player)
+        private void AntiStack(CircleShape playerShape)
         {
-            Vector2f PlayerPos = player.playerShape.Position;
-            float radius = player.playerShape.Radius;
+            Vector2f PlayerPos = playerShape.Position;
+            float radius = playerShape.Radius;
             if (PlayerPos.Y + radius > window.Size.Y)
             {
                 PlayerPos.Y = window.Size.Y - radius - 1;
@@ -253,7 +240,7 @@ namespace Game
             {
                 PlayerPos.X = radius + 1;
             }
-            player.playerShape.Position = PlayerPos;
+            playerShape.Position = PlayerPos;
         }
 
         private void Draw()
