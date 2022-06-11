@@ -40,30 +40,35 @@ namespace Game
             Init();
             while (window.IsOpen)
             {
-                foreach (Player player in playerList)
-                {
-                    player.swapAbility.currentCooldown -= time.ElapsedTime.AsSeconds();
-                    if (player.isAlive)
-                    {
-                        Moving(player);
-                        if (Keyboard.IsKeyPressed(player.swapAbility.key))
-                            SwapAbility(player);
-                        CheckEating(player);
-                        AntiStack(player.playerShape);
-                    }
-                    else
-                    {
-                        TryRespawnPlayer(time.ElapsedTime.AsSeconds(), player);
-                    }
-                }
                 if (currentTimeToSpawnFood <= 0)
                 {
                     currentTimeToSpawnFood = foodSpawnRate;
                     foodList.Add(SpawnFood());
                 }
+                PlayerUpdate(time.ElapsedTime.AsSeconds());
                 currentTimeToSpawnFood -= time.ElapsedTime.AsSeconds();
                 time.Restart();
                 Draw();
+            }
+        }
+
+        private void PlayerUpdate(float time)
+        {
+            foreach (Player player in playerList)
+            {
+                player.swapAbility.currentCooldown -= time;
+                if (player.isAlive)
+                {
+                    Moving(player);
+                    if (Keyboard.IsKeyPressed(player.swapAbility.key))
+                        SwapAbility(player);
+                    CheckEating(player);
+                    AntiStack(player.playerShape);
+                }
+                else
+                {
+                    TryRespawnPlayer(time, player);
+                }
             }
         }
 
