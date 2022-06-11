@@ -48,6 +48,7 @@ namespace Game
                         Moving(player);
                         if (Keyboard.IsKeyPressed(player.swapAbility.key))
                             SwapAbility(player);
+                        CheckEating(player);
                         AntiStack(player.playerShape);
                     }
                     else
@@ -125,8 +126,6 @@ namespace Game
             else
                 movePlayer = BotMove(player, playerSpeed);
             player.playerShape.Position += movePlayer;
-            CheckEating(player);
-            AntiStack(player.playerShape);
         }
 
         private Vector2f BotMove(Player player, float playerSpeed)
