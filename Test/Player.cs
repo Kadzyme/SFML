@@ -18,8 +18,6 @@ namespace Game
         public bool isAlive;
         public float currentTimeForRevive = 0;
 
-        public void Update() { }
-
         public Player SetStartPlayerSettings(KeysForMoving? keys, Keyboard.Key? keyForSwap, Color playerShapeColor, bool isBot)
         {
             Player player = new();
