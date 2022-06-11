@@ -226,19 +226,19 @@ namespace Game
             float radius = playerShape.Radius;
             if (PlayerPos.Y + radius > window.Size.Y)
             {
-                PlayerPos.Y = window.Size.Y - radius - 1;
+                PlayerPos.Y = window.Size.Y - radius;
             }
             if (PlayerPos.Y - radius < 0)
             {
-                PlayerPos.Y = radius + 1;
+                PlayerPos.Y = radius;
             }
             if (PlayerPos.X + radius > window.Size.X)
             {
-                PlayerPos.X = window.Size.X - radius - 1;
+                PlayerPos.X = window.Size.X - radius;
             }
             if (PlayerPos.X - radius < 0)
             {
-                PlayerPos.X = radius + 1;
+                PlayerPos.X = radius;
             }
             playerShape.Position = PlayerPos;
         }
