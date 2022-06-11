@@ -112,8 +112,7 @@ namespace Game
         }
 
         private bool Collide(CircleShape firstCircle, CircleShape secondCircle)
-            => Math.Abs(secondCircle.Position.X - firstCircle.Position.X) <= secondCircle.Radius + firstCircle.Radius 
-            && Math.Abs(secondCircle.Position.Y - firstCircle.Position.Y) <= secondCircle.Radius + firstCircle.Radius;
+            => CollideX(firstCircle, secondCircle) && CollideY(firstCircle, secondCircle);
 
         private bool CollideX(CircleShape firstCircle, CircleShape secondCircle)
             => Math.Abs(secondCircle.Position.X - firstCircle.Position.X) <= secondCircle.Radius + firstCircle.Radius;
