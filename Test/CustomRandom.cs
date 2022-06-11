@@ -1,4 +1,5 @@
 ﻿using SFML.System;
+using SFML.Graphics;
 
 namespace Game
 {
@@ -14,7 +15,7 @@ namespace Game
             return result;
         }
 
-        public static Vector3f Color()
-            => new Vector3f(rand.Next(0, 256), rand.Next(0, 256), rand.Next(0, 256));
+        public static Color Color()
+            => new Color((byte)rand.Next(0, 256), (byte)rand.Next(0, 256), (byte)rand.Next(0, 256));
     }
 }

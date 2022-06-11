@@ -105,8 +105,9 @@ namespace Game
             Random rand = new Random();
             CircleShape food = new(15);
             food.Origin = new Vector2f(food.Radius, food.Radius);
-            food.FillColor = new Color((byte)rand.Next(0, 255), (byte)rand.Next(0, 255), (byte)rand.Next(0, 255));
-            food.Position = new Vector2f(rand.Next((int)food.Radius, (int)window.Size.X - (int)food.Radius), rand.Next((int)food.Radius, (int)window.Size.Y - (int)food.Radius));
+            food.FillColor = CustomRandom.Color();
+            food.Position = CustomRandom.Vector(new Vector2f(food.Radius, food.Radius), 
+                new Vector2f(window.Size.X - food.Radius, window.Size.Y - food.Radius));
             return food;
         }
 
