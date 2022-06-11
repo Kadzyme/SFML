@@ -23,7 +23,6 @@ namespace Game
             Player player = new();
             player.playerShape = new(25);
             player.playerShape.FillColor = playerShapeColor;
-            player.playerShape.Origin = new Vector2f(player.playerShape.Radius, player.playerShape.Radius);
             player.isAlive = true;
             player.isBot = isBot;
             player.pointToGo = new(5);

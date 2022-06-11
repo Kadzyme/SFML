@@ -25,6 +25,7 @@ namespace Game
         {
             Player player = new();
             player = player.SetStartPlayerSettings(keys, keyForSwap, playerShapeColor, isBot);
+            SetOrigin(player.playerShape);
             player.ChangePos(player.playerShape, window);
             player.ChangePos(player.pointToGo, window);
             playerList.Add(player);
@@ -102,9 +103,8 @@ namespace Game
 
         private CircleShape SpawnFood()
         {
-            Random rand = new Random();
             CircleShape food = new(15);
-            food.Origin = new Vector2f(food.Radius, food.Radius);
+            SetOrigin(food);
             food.FillColor = CustomRandom.Color();
             food.Position = CustomRandom.Vector(new Vector2f(food.Radius, food.Radius), 
                 new Vector2f(window.Size.X - food.Radius, window.Size.Y - food.Radius));
@@ -207,7 +207,7 @@ namespace Game
                     foodList.Remove(food);
                     food.Dispose();
                     player.playerShape.Radius += 0.5f;
-                    player.playerShape.Origin = new Vector2f(player.playerShape.Radius, player.playerShape.Radius);
+                    SetOrigin(player.playerShape);
                     break;
                 }
             }
@@ -230,7 +230,7 @@ namespace Game
             playerForDestroy.isAlive = false;
             playerForDestroy.currentTimeForRevive = timeForRevivePlayer;
             playerForReward.playerShape.Radius += playerForDestroy.playerShape.Radius / 4;
-            playerForReward.playerShape.Origin = new Vector2f(playerForReward.playerShape.Radius, playerForReward.playerShape.Radius);
+            SetOrigin(playerForReward.playerShape);
         }
 
         private void AntiStack(Player player)
@@ -277,6 +277,8 @@ namespace Game
             RenderWindow w = (RenderWindow)sender;
             w.Close();
         }
-    
+
+        private void SetOrigin(CircleShape circle)
+            => circle.Origin = new Vector2f(circle.Radius, circle.Radius);
     }
 }
