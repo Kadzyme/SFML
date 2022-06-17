@@ -11,6 +11,7 @@ namespace Game
         public KeysForMoving keys;
 
         public PlayerSwapAbility swapAbility = new();
+        public ShootAbility shootAbility = new();
 
         public CircleShape pointToGo;
         public bool isBot;
@@ -27,6 +28,7 @@ namespace Game
             player.isBot = isBot;
             player.pointToGo = new(5);
             player.swapAbility.ResetCooldownOfAbility();
+            player.shootAbility.ResetCooldownOfAbility();
             if (keys != null && keyForSwap != null)
             {
                 SetKeys(player, (KeysForMoving)keys, (Keyboard.Key)keyForSwap);
@@ -37,6 +39,7 @@ namespace Game
         private void SetKeys(Player player, KeysForMoving keys, Keyboard.Key keyForSwap)
         {
             player.keys = keys;
+            player.swapAbility.key = keyForSwap;
             player.swapAbility.key = keyForSwap;
         }
 

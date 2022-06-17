@@ -9,6 +9,7 @@ namespace Game
         private RenderWindow window = new(new VideoMode(1600, 900), "Game");
 
         private List<CircleShape> foodList = new();
+        private List<Bullet> bulletList = new();
         private List<Player> playerList = new();
 
         private void Init()
@@ -17,7 +18,8 @@ namespace Game
             window.Closed += WindowClosed;
 
             SetStartPlayerSettings(null, null, Color.Blue, true);
-            SetStartPlayerSettings(new KeysForMoving(Keyboard.Key.Up, Keyboard.Key.Down, Keyboard.Key.Left, Keyboard.Key.Right), Keyboard.Key.R, Color.Red, false);
+            KeysForMoving keysForMoving = new(Keyboard.Key.Up, Keyboard.Key.Down, Keyboard.Key.Left, Keyboard.Key.Right);
+            SetStartPlayerSettings(keysForMoving, Keyboard.Key.R, Color.Red, false);
             SetStartPlayerSettings(null, null, Color.Black, true);
         }
 
@@ -46,6 +48,7 @@ namespace Game
                     foodList.Add(SpawnFood());
                 }
                 PlayerUpdate(time.ElapsedTime.AsSeconds());
+                BulletMoving();
                 currentTimeToSpawnFood -= time.ElapsedTime.AsSeconds();
                 time.Restart();
                 Draw();
@@ -56,12 +59,14 @@ namespace Game
         {
             foreach (Player player in playerList)
             {
+                player.shootAbility.currentCooldown -= time;
                 player.swapAbility.currentCooldown -= time;
                 if (player.isAlive)
                 {
                     Moving(player);
                     if (Keyboard.IsKeyPressed(player.swapAbility.key))
                         SwapAbility(player);
+                    ShootAbility(player);
                     CheckEating(player);
                     AntiStack(player.playerShape);
                 }
@@ -72,13 +77,55 @@ namespace Game
             }
         }
 
-        public void SwapAbility(Player player)
+        private void BulletMoving()
+        {
+            List<Bullet> curBulletList = new(bulletList);
+            foreach (Bullet bullet in curBulletList)
+            {
+                bullet.MoveBullet(bullet);
+                if (!BulletInScreen(bullet.bulletShape.Position, bullet.bulletShape.Radius))
+                {
+                    DeleteBullet(bullet);
+                }
+                foreach (Player player in playerList)
+                {
+                    if (Collide(bullet.bulletShape, player.playerShape) && player.playerShape != bullet.owner)
+                    {
+                        player.playerShape.Radius -= bullet.bulletShape.Radius / 2;
+                        SetOrigin(player.playerShape);
+                        if (player.playerShape.Radius < 10)
+                            DiePlayer(player);
+                        DeleteBullet(bullet);
+                    }
+                }
+            }
+        }
+
+        private void DeleteBullet(Bullet bullet)
+        {
+            bulletList.Remove(bullet);
+        }
+
+        private void ShootAbility(Player player)
+        {
+            if (player.shootAbility.currentCooldown > 0)
+                return;
+            Vector2f bulletSpeed = CustomRandom.Vector(new Vector2f(-5, -5), new Vector2f(5, 5));
+            if (bulletSpeed.X == 0 && bulletSpeed.Y == 0)
+            {
+                bulletSpeed = CustomRandom.Vector(new Vector2f(1, 1), new Vector2f(6, 6));
+            }
+            bulletList.Add(player.shootAbility.SpawnBullet(player, bulletSpeed));
+            player.shootAbility.ResetCooldownOfAbility();
+        }
+
+        private void SwapAbility(Player player)
         {
             float minDistance = window.Size.X + window.Size.Y;
             Player? p = null;
             foreach (Player otherPlayer in playerList)
             {
-                float curDistance = player.swapAbility.Distance(player.playerShape.Position, otherPlayer.playerShape.Position);
+                float curDistance = player.swapAbility.CalculateDistance(player.playerShape.Position, otherPlayer.playerShape.Position);
                 if (curDistance < minDistance && otherPlayer != player && otherPlayer.isAlive
                     && player.swapAbility.currentCooldown < 0)
                 {
@@ -99,6 +146,7 @@ namespace Game
             if (player.currentTimeForRevive <= 0 && !player.isAlive)
             {
                 player.ChangePos(player.playerShape, window);
+                player.playerShape.Radius = 25;
                 player.isAlive = true;
             }
         }
@@ -112,6 +160,10 @@ namespace Game
                 new Vector2f(window.Size.X - food.Radius, window.Size.Y - food.Radius));
             return food;
         }
+
+        private bool BulletInScreen(Vector2f bulletPos, float radius)
+            => bulletPos.X + radius < window.Size.X && bulletPos.Y + radius < window.Size.Y
+            && bulletPos.X - radius > 0 && bulletPos.Y - radius > 0;
 
         private bool Collide(CircleShape firstCircle, CircleShape secondCircle)
             => CollideX(firstCircle, secondCircle) && CollideY(firstCircle, secondCircle);
@@ -217,11 +269,16 @@ namespace Game
 
         private void EatingPlayer(Player playerForDestroy, Player playerForReward)
         {
-            int timeForRevivePlayer = 5;
-            playerForDestroy.isAlive = false;
-            playerForDestroy.currentTimeForRevive = timeForRevivePlayer;
+            DiePlayer(playerForDestroy);
             playerForReward.playerShape.Radius += playerForDestroy.playerShape.Radius / 4;
             SetOrigin(playerForReward.playerShape);
+        }
+
+        private void DiePlayer(Player player)
+        {
+            int timeForRevivePlayer = 5;
+            player.isAlive = false;
+            player.currentTimeForRevive = timeForRevivePlayer;
         }
 
         private void AntiStack(CircleShape playerShape)
@@ -251,9 +308,13 @@ namespace Game
         {
             window.DispatchEvents();
             window.Clear(Color.Cyan);
-            foreach (CircleShape food in foodList)
+            foreach (Shape food in foodList)
             {
                 window.Draw(food);
+            }
+            foreach (Bullet bullet in bulletList)
+            {
+                window.Draw(bullet.bulletShape);
             }
             foreach (Player player in playerList)
             {
