@@ -18,7 +18,7 @@ namespace Game
             bullet.bulletShape.FillColor = owner.playerShape.FillColor;
             bullet.bulletShape.Position = owner.playerShape.Position;
             bullet.bulletSpeed = bulletSpeed;
-            bullet.owner = owner.playerShape;
+            bullet.ownerShape = owner.playerShape;
             return bullet;
         }
 

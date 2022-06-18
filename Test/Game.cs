@@ -95,7 +95,7 @@ namespace Game
                 }
                 foreach (Player player in playerList)
                 {
-                    if (Collide(bullet.bulletShape, player.playerShape) && player.playerShape != bullet.owner)
+                    if (Collide(bullet.bulletShape, player.playerShape) && player.playerShape != bullet.ownerShape)
                     {
                         player.playerShape.Radius -= bullet.bulletShape.Radius / 2;
                         SetOrigin(player.playerShape);
