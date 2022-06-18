@@ -252,7 +252,8 @@ namespace Game
 
         private void CheckEating(Player player)
         {
-            foreach (CircleShape food in foodList)
+            List<CircleShape> listFood = new(foodList);
+            foreach (CircleShape food in listFood)
             {
                 if (Collide(player.playerShape, food))
                 {
@@ -260,10 +261,10 @@ namespace Game
                     food.Dispose();
                     player.playerShape.Radius += 0.5f;
                     SetOrigin(player.playerShape);
-                    break;
                 }
             }
-            foreach (Player otherPlayer in playerList)
+            List<Player> listPlayer = new(playerList);
+            foreach (Player otherPlayer in listPlayer)
             {
                 if (Collide(player.playerShape, otherPlayer.playerShape) && otherPlayer.isAlive)
                 {
@@ -271,7 +272,6 @@ namespace Game
                         EatingPlayer(otherPlayer, player);
                     else if (player.playerShape.Radius < otherPlayer.playerShape.Radius)
                         EatingPlayer(player, otherPlayer);
-                    break;
                 }
             }
         }
