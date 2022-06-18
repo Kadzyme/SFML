@@ -1,7 +1,6 @@
 ﻿using SFML.Window;
 using SFML.Graphics;
 using SFML.System;
-//using System.Configuration;
 
 namespace Game
 {
@@ -15,8 +14,6 @@ namespace Game
 
         private void Init()
         {
-            //var x = Convert.ToUInt32(ConfigurationManager.AppSettings.Get("Window_X"));
-            //var y = Convert.ToUInt32(ConfigurationManager.AppSettings.Get("Window_Y"));
             window = new(new VideoMode(1600, 900), "Game");
             window.SetFramerateLimit(60);
             window.Closed += WindowClosed;

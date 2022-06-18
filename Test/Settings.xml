@@ -1,7 +1,0 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<configuration>
-	<windowSize>
-		<add key="Window_X" value="1600" />
-		<add key="Window_Y" value="900" />
-	</windowSize>
-</configuration>
