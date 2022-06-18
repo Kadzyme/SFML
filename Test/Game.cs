@@ -1,12 +1,13 @@
 ﻿using SFML.Window;
 using SFML.Graphics;
 using SFML.System;
+//using System.Configuration;
 
 namespace Game
 {
     public class Game
     {
-        private RenderWindow window = new(new VideoMode(1600, 900), "Game");
+        private RenderWindow window;
 
         private List<CircleShape> foodList = new();
         private List<Bullet> bulletList = new();
@@ -14,9 +15,17 @@ namespace Game
 
         private void Init()
         {
+            //var x = Convert.ToUInt32(ConfigurationManager.AppSettings.Get("Window_X"));
+            //var y = Convert.ToUInt32(ConfigurationManager.AppSettings.Get("Window_Y"));
+            window = new(new VideoMode(1600, 900), "Game");
             window.SetFramerateLimit(60);
             window.Closed += WindowClosed;
 
+            InitPlayers();
+        }
+
+        private void InitPlayers()
+        {
             SetStartPlayerSettings(null, null, Color.Blue, true);
             KeysForMoving keysForMoving = new(Keyboard.Key.Up, Keyboard.Key.Down, Keyboard.Key.Left, Keyboard.Key.Right);
             SetStartPlayerSettings(keysForMoving, Keyboard.Key.R, Color.Red, false);
