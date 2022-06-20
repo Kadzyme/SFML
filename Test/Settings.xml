@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<settings>
+	<window>
+		<windowSizeX>1600</windowSizeX>
+	    <windowSizeY>900</windowSizeY>
+	</window>
+	<players>
+		<timeForRevivePlayer>5</timeForRevivePlayer>
+		<minSizeOfPlayer>15</minSizeOfPlayer>
+	    <startSizeOfPlayer>20</startSizeOfPlayer>
+	</players>
+	<balance>		
+		<multiplierOfEatenFood>0,15</multiplierOfEatenFood>
+		<multiplierOfEatenPlayers>0,25</multiplierOfEatenPlayers>		
+	    <sizeOfTheBullets>0,25</sizeOfTheBullets>
+		<bulletDamageMultiplier>0,5</bulletDamageMultiplier>
+	</balance>
+</settings>

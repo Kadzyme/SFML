@@ -21,7 +21,7 @@ namespace Game
 
         public Player SetStartPlayerSettings(KeysForMoving? keys, Keyboard.Key? keyForSwap, Color playerShapeColor, bool isBot)
         {
-            playerShape = new(25);
+            playerShape = new(GameParametres.startSizeOfPlayer);
             playerShape.FillColor = playerShapeColor;
             isAlive = true;
             this.isBot = isBot;
@@ -141,7 +141,7 @@ namespace Game
             if (currentTimeForRevive <= 0 && !isAlive)
             {
                 SetRandomPos(playerShape);
-                playerShape.Radius = 25;
+                playerShape.Radius = GameParametres.startSizeOfPlayer;
                 isAlive = true;
             }
         }
@@ -170,9 +170,8 @@ namespace Game
 
         public void Die()
         {
-            int timeForRevivePlayer = 5;
             isAlive = false;
-            currentTimeForRevive = timeForRevivePlayer;
+            currentTimeForRevive = GameParametres.timeForRevivePlayer;
         }
 
         public void SetRandomPos(CircleShape shape)

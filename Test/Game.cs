@@ -1,6 +1,7 @@
 ﻿using SFML.Window;
 using SFML.Graphics;
 using SFML.System;
+using System.Xml;
 
 namespace Game
 {
@@ -14,7 +15,46 @@ namespace Game
 
         private void Init()
         {
-            window = new(new VideoMode(1600, 900), "Game");
+            XmlDocument settingsXml = new();
+            settingsXml.Load("C:\\Users\\Vano\\source\\repos\\Test\\Test\\Settings.xml");
+            Vector2u size = new(0, 0);
+            foreach (XmlElement element in settingsXml.DocumentElement)
+            {
+                foreach (XmlNode node in element.ChildNodes)
+                {
+                    switch(node.Name)
+                    {
+                        case "windowSizeX":
+                            size.X = uint.Parse(node.InnerText);
+                            break;
+                        case "windowSizeY":
+                            size.Y = uint.Parse(node.InnerText);
+                            break;
+                        case "minSizeOfPlayer":
+                            GameParametres.minSizeOfPlayer = float.Parse(node.InnerText);
+                            break;
+                        case "startSizeOfPlayer":
+                            GameParametres.startSizeOfPlayer = float.Parse(node.InnerText);
+                            break;
+                        case "multiplierOfEatenFood":
+                            GameParametres.multiplierOfEatenFood = float.Parse(node.InnerText) /*/ 100*/;
+                            break;
+                        case "multiplierOfEatenPlayers":
+                            GameParametres.multiplierOfEatenPlayers = float.Parse(node.InnerText) /*/ 100*/;
+                            break;
+                        case "sizeOfTheBullets":
+                            GameParametres.sizeOfTheBullets = float.Parse(node.InnerText) /*/ 100*/;
+                            break;
+                        case "bulletDamageMultiplier":
+                            GameParametres.bulletDamageMultiplier = float.Parse(node.InnerText) /*/ 100*/;
+                            break;
+                        case "timeForRevivePlayer":
+                            GameParametres.timeForRevivePlayer = float.Parse(node.InnerText);
+                            break;
+                    }
+                }
+            }
+            window = new(new VideoMode(size.X, size.Y), "Game");
             window.SetFramerateLimit(60);
             window.Closed += WindowClosed;
 
@@ -38,7 +78,7 @@ namespace Game
 
         public void GameLoop()
         {
-            float foodSpawnRate = 0.25f;
+            float foodSpawnRate = 0.4f;
             float currentTimeToSpawnFood = foodSpawnRate;
             Clock time = new();
             Init();
@@ -91,9 +131,9 @@ namespace Game
                 {
                     if (Collisions.Collide(bullet.bulletShape, player.playerShape) && player.playerShape != bullet.ownerShape)
                     {
-                        player.playerShape.Radius -= bullet.bulletShape.Radius / 2;
+                        player.playerShape.Radius -= bullet.bulletShape.Radius * GameParametres.bulletDamageMultiplier;
                         SetOrigin(player.playerShape);
-                        if (player.playerShape.Radius < 10)
+                        if (player.playerShape.Radius < GameParametres.minSizeOfPlayer)
                             player.Die();
                         DeleteBullet(bullet);
                     }
@@ -125,7 +165,7 @@ namespace Game
                 {
                     foodList.Remove(food);
                     food.Dispose();
-                    player.playerShape.Radius += 0.5f;
+                    player.playerShape.Radius += food.Radius * GameParametres.multiplierOfEatenFood;
                     SetOrigin(player.playerShape);
                 }
             }
@@ -145,7 +185,7 @@ namespace Game
         private void EatingPlayer(Player playerForDestroy, Player playerForReward)
         {
             playerForDestroy.Die();
-            playerForReward.playerShape.Radius += playerForDestroy.playerShape.Radius / 4;
+            playerForReward.playerShape.Radius += playerForDestroy.playerShape.Radius * GameParametres.multiplierOfEatenPlayers;
             SetOrigin(playerForReward.playerShape);
         }
 
