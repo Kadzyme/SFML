@@ -37,16 +37,16 @@ namespace Game
                             GameParametres.startSizeOfPlayer = float.Parse(node.InnerText);
                             break;
                         case "multiplierOfEatenFood":
-                            GameParametres.multiplierOfEatenFood = float.Parse(node.InnerText) /*/ 100*/;
+                            GameParametres.multiplierOfEatenFood = float.Parse(node.InnerText);
                             break;
                         case "multiplierOfEatenPlayers":
-                            GameParametres.multiplierOfEatenPlayers = float.Parse(node.InnerText) /*/ 100*/;
+                            GameParametres.multiplierOfEatenPlayers = float.Parse(node.InnerText);
                             break;
                         case "sizeOfTheBullets":
-                            GameParametres.sizeOfTheBullets = float.Parse(node.InnerText) /*/ 100*/;
+                            GameParametres.sizeOfTheBullets = float.Parse(node.InnerText);
                             break;
                         case "bulletDamageMultiplier":
-                            GameParametres.bulletDamageMultiplier = float.Parse(node.InnerText) /*/ 100*/;
+                            GameParametres.bulletDamageMultiplier = float.Parse(node.InnerText);
                             break;
                         case "timeForRevivePlayer":
                             GameParametres.timeForRevivePlayer = float.Parse(node.InnerText);

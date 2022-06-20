@@ -1,6 +1,4 @@
-﻿using SFML.System;
-
-namespace Game
+﻿namespace Game
 {
     public class GameParametres
     {
