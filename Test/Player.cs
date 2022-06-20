@@ -21,33 +21,165 @@ namespace Game
 
         public Player SetStartPlayerSettings(KeysForMoving? keys, Keyboard.Key? keyForSwap, Color playerShapeColor, bool isBot)
         {
-            Player player = new();
-            player.playerShape = new(25);
-            player.playerShape.FillColor = playerShapeColor;
-            player.isAlive = true;
-            player.isBot = isBot;
-            player.pointToGo = new(5);
-            player.swapAbility.ResetCooldownOfAbility();
-            player.shootAbility.ResetCooldownOfAbility();
+            playerShape = new(25);
+            playerShape.FillColor = playerShapeColor;
+            isAlive = true;
+            this.isBot = isBot;
+            pointToGo = new(5);
+            swapAbility.ability.SetNormalCooldown(3);
+            shootAbility.ability.SetNormalCooldown(1);
+            swapAbility.ability.ResetCooldownOfAbility();
+            shootAbility.ability.ResetCooldownOfAbility();
+            SetRandomPos(playerShape);
+            SetRandomPos(pointToGo);
             if (keys != null && keyForSwap != null)
             {
-                SetKeys(player, (KeysForMoving)keys, (Keyboard.Key)keyForSwap);
+                SetKeys((KeysForMoving)keys, (Keyboard.Key)keyForSwap);
             }
-            return player;
+            return this;
         }
 
-        private void SetKeys(Player player, KeysForMoving keys, Keyboard.Key keyForSwap)
+        private void SetKeys(KeysForMoving keys, Keyboard.Key keyForSwap)
         {
-            player.keys = keys;
-            player.swapAbility.key = keyForSwap;
-            player.swapAbility.key = keyForSwap;
+            this.keys = keys;
+            swapAbility.ability.key = keyForSwap;
         }
 
-        public void ChangePos(CircleShape playerShape, RenderWindow window)
+        public Bullet Shoot(Vector2f bulletSpeed)
+            => shootAbility.SpawnBullet(this, bulletSpeed);
+
+        public void ShootAbility(List<Bullet> bulletList)
         {
-            Vector2f min = new(playerShape.Radius, playerShape.Radius);
-            Vector2f max = new(window.Size.X - playerShape.Radius, window.Size.Y - playerShape.Radius);
-            playerShape.Position = CustomRandom.Vector(min, max);
+            if (shootAbility.ability.CanCastAbility())
+                return;
+            Vector2f bulletSpeed = CustomRandom.Vector(new Vector2f(-5, -5), new Vector2f(5, 5));
+            if (bulletSpeed.X == 0 && bulletSpeed.Y == 0)
+            {
+                bulletSpeed = CustomRandom.Vector(new Vector2f(1, 1), new Vector2f(6, 6));
+            }
+            bulletList.Add(Shoot(bulletSpeed));
+            shootAbility.ability.ResetCooldownOfAbility();
+        }
+
+        public void SwapAbility(List<Player> playerList, Vector2f windowSize)
+        {
+            if (!Keyboard.IsKeyPressed(swapAbility.ability.key))
+                return;
+            float minDistance = windowSize.X + windowSize.Y;
+            Player? p = null;
+            foreach (Player otherPlayer in playerList)
+            {
+                float curDistance = swapAbility.CalculateDistance(playerShape.Position, otherPlayer.playerShape.Position);
+                if (curDistance < minDistance && otherPlayer != this && otherPlayer.isAlive
+                    && !swapAbility.ability.CanCastAbility())
+                {
+                    minDistance = curDistance;
+                    p = otherPlayer;
+                }
+            }
+            if (p != null)
+            {
+                swapAbility.SwapPlayers(p, this);
+                swapAbility.ability.ResetCooldownOfAbility();
+            }
+        }
+
+        public void UpdateCooldowns(float time)
+        {
+            shootAbility.ability.UpdateCooldown(time);
+            swapAbility.ability.UpdateCooldown(time);
+        }
+
+        public void Moving()
+        {
+            float playerSpeed = 7f;
+            Vector2f movePlayer;
+            if (!isBot)
+                movePlayer = PlayerMove(playerSpeed);
+            else
+                movePlayer = BotMove(playerSpeed);
+            playerShape.Position += movePlayer;
+        }
+
+        private Vector2f BotMove(float playerSpeed)
+        {
+            Vector2f playerPos = playerShape.Position;
+            Vector2f pointToGoPos = pointToGo.Position;
+            Vector2f movePlayer = new(0, 0);
+            if (!Collisions.CollideY(playerShape, pointToGo))
+            {
+                if (playerPos.Y < pointToGoPos.Y)
+                {
+                    movePlayer.Y += playerSpeed;
+                }
+                else
+                {
+                    movePlayer.Y -= playerSpeed;
+                }
+            }
+            if (!Collisions.CollideX(playerShape, pointToGo))
+            {
+                if (playerPos.X < pointToGoPos.X)
+                {
+                    movePlayer.X += playerSpeed;
+                }
+                else
+                {
+                    movePlayer.X -= playerSpeed;
+                }
+            }
+            if (Collisions.Collide(playerShape, pointToGo))
+            {
+                SetRandomPos(pointToGo);
+            }
+            return movePlayer;
+        }
+
+        public void TryRespawnPlayer(float time)
+        {
+            currentTimeForRevive -= time;
+            if (currentTimeForRevive <= 0 && !isAlive)
+            {
+                SetRandomPos(playerShape);
+                playerShape.Radius = 25;
+                isAlive = true;
+            }
+        }
+
+        private Vector2f PlayerMove(float playerSpeed)
+        {
+            Vector2f movePlayer = new(0, 0);
+            if (Keyboard.IsKeyPressed(keys.DownKey))
+            {
+                movePlayer.Y += playerSpeed;
+            }
+            else if (Keyboard.IsKeyPressed(keys.UpKey))
+            {
+                movePlayer.Y -= playerSpeed;
+            }
+            if (Keyboard.IsKeyPressed(keys.RightKey))
+            {
+                movePlayer.X += playerSpeed;
+            }
+            else if (Keyboard.IsKeyPressed(keys.LeftKey))
+            {
+                movePlayer.X -= playerSpeed;
+            }
+            return movePlayer;
+        }
+
+        public void Die()
+        {
+            int timeForRevivePlayer = 5;
+            isAlive = false;
+            currentTimeForRevive = timeForRevivePlayer;
+        }
+
+        public void SetRandomPos(CircleShape shape)
+        {
+            Vector2f min = new(shape.Radius, shape.Radius);
+            Vector2f max = new(Game.window.Size.X - shape.Radius, Game.window.Size.Y - shape.Radius);
+            shape.Position = CustomRandom.Vector(min, max);
         }
     }
 }

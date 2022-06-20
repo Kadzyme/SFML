@@ -1,15 +1,10 @@
 ﻿using SFML.System;
-using SFML.Graphics;
-using SFML.Window;
 
 namespace Game
 {
     public class ShootAbility
     {
-        private float normalCooldown = 1f;
-        public float currentCooldown;
-
-        public Bullet bullet;
+        public Ability ability = new();
 
         public Bullet SpawnBullet(Player owner, Vector2f bulletSpeed)
         {
@@ -21,8 +16,5 @@ namespace Game
             bullet.ownerShape = owner.playerShape;
             return bullet;
         }
-
-        public void ResetCooldownOfAbility()
-            => currentCooldown = normalCooldown;
     }
 }
